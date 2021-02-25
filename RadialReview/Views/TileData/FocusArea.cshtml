@@ -1,0 +1,90 @@
+﻿@*@model RadialReview.Controllers.CompassController.CompassTileVM*@
+
+<script language="text/javascript">
+    function editCompassTile(tileid, url, type, keyId, heading, content) {
+        //alert("Updating Tile Id: " + tileid + "\nURL = " + url);
+        if (typeof (keyId) == "undefined") {
+            keyId = null;
+        }
+
+        //reset the URL
+
+        url = url + tileid;
+        showModal({
+            title: "Edit Compass Tile",
+            fields: [
+                { name: "id", type: "hidden", value: tileid },
+                { text: "Title", name: "title", value: heading },
+                { name: "detail", type: "textarea", value: content },
+                { name: "dataUrl", type: "hidden", value: url },
+                { name: "type", type: "hidden", value: type },
+                { name: "keyId", type: "hidden", value: keyId },
+                { name: "x", type: "hidden", value: 0 },
+                { name: "y", type: "hidden", value: 1 },
+
+            ],
+            push: "/Compass/UpdateCompassTile/",
+            close: function () {
+                window.location.reload(true);
+            }
+        });
+
+    }
+</script>
+
+
+<style>
+    .tile-buttons {
+        float: right;
+        position: absolute;
+        right: 6px;
+        top: 6px;
+    }
+</style>
+
+@if ((ViewBag.IsCompassAdmin)&&(ViewBag.IsManager))
+{
+<div class="review smallBreak2 loading tiny faq-tile" style2="min-height:30px;">
+    <div class="faq-heading heading">
+        <span class="handle">
+            @ViewBag.TileHeader
+            <span class="glyphicon glyphicon-edit icon clickable gray tile-buttons" onclick="editCompassTile('@ViewBag.TileIdentifier','/TileData/FocusArea/','Url',null,'@ViewBag.TileHeader','@ViewBag.Detail')"></span>
+        </span>
+    </div>
+    @if (ViewBag.Detail.IndexOf("</") > -1)
+    {
+    <div class="tile">
+        @MvcHtmlString.Create(ViewBag.Detail)
+    </div>
+    }
+    else
+    {
+        <div class="tile">
+            @ViewBag.Detail 
+        </div>
+    }
+</div>
+}
+else
+{
+<div class="review smallBreak2 loading tiny faq-tile" style2="min-height:30px;">
+    <div class="faq-heading heading">
+        <span class="handle">
+            @ViewBag.TileHeader
+        </span>
+    </div>
+    @if (ViewBag.Detail.IndexOf("</") > -1)
+    {
+    <div class="tile">
+        @MvcHtmlString.Create(ViewBag.Detail)
+    </div>
+    }
+    else
+    {
+        <div class="tile">
+            @ViewBag.Detail
+        </div>
+    }
+</div>
+}
+

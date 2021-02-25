@@ -1,0 +1,202 @@
+﻿@model RadialReview.Models.ViewModels.CompassDropdownVM
+@using RadialReview.Models.Enums
+@{
+    var maxLen = 4;
+    var breakoutMeetings = Model.AllCompasses.NotNull(x => x.Count()) > maxLen;
+    var orderedMeetings = Model.AllCompasses.NotNull(y => y.OrderBy(x => x.StarDate ?? DateTime.MaxValue));
+    var breakoutCustom = Model.CustomCompass.NotNull(x => x.Count()) > maxLen;
+    var custom = Model.CustomCompass;
+    var orgId = ViewBag.OrganizationId;
+
+    var isPrimary = new Func<long, CompassType, bool>
+    ((id, type) =>
+    {
+        return Model.PrimaryCompass.Type == type && Model.PrimaryCompass.CompassId == id;
+    });
+
+    var primaryCompassName =
+    Model.AllCompasses.NotNull(y => y.FirstOrDefault(x => isPrimary(x.Id, CompassType.Standard)).NotNull(x => x.Name)) ??
+    Model.CustomCompass.NotNull(y => y.FirstOrDefault(x => isPrimary(x.Id, CompassType.Standard)).NotNull(x => x.Name)) ??
+    // Model.AllCompasses.NotNull
+    "Primary Compass";
+
+    var pCompass =
+
+primaryCompassName = Html.Encode(primaryCompassName);
+
+}
+
+<script>
+
+	Compass.openCompassModal = function () {
+				var arr = [{
+					type: "div",
+				text: "<b>Primary Compass</b>"
+					}, {
+					type: "div",
+                        text: "<a class='btn btn-link' href='/' style='text-decoration:underline;'>@(primaryCompassName)</a>"
+			}, {
+					type: "div",
+				text: "<br/><b>Meeting Compass</b>"
+			}];
+
+				var compassItems = @(Html.ArrayToString(Model.AllCompasses));
+				for (var i = 0; i < compassItems.length; i++) {
+					arr.push({
+						type: "div",
+				text: "<a class='btn btn-link' style='text-decoration: underline;' href='/Dashboard/Generate/" + compassItems[i].Id+"?type=L10'>" + compassItems[i].Name +"</a>"
+					});
+			}
+
+		if (compassItems.length == 0) {
+			arr.push({
+				type: "div",
+				text: "<span style='color:#ccc;'><i>No meetings</i></span>"
+			});
+		}
+		arr.push({
+			type: "div",
+			text: "<br/><b>Additional Compasses</b>"
+		});
+
+		var customCompassItems = @(Html.ArrayToString(Model.CustomCompass));
+		for (var i = 0; i < customCompassItems.length; i++) {
+			arr.push({
+				type: "div",
+				text: "<a class='btn btn-link' style='text-decoration: underline;' href='/Dashboard/Index/" + customCompassItems[i].Id + "'>here" + customCompassItems[i].Name +"</a>"
+			});
+		}
+
+
+		if (customCompassItems.length == 0) {
+			arr.push({
+				type: "div",
+				text: "<span style='color:#ccc;'><i>No additional compasses</i></span>"
+			});
+		}
+
+
+		showModal({
+		title:"Show Compass",
+			fields: arr,
+			noFooter: true
+		});
+	}
+
+	function initRecalculateCompassDropdownExtendedMenuStyle(e) {
+		debugger;
+	}
+	function recalculateCompassDropdownExtendedMenuStyle(self, items) {
+
+		var width = 253;
+		var windowWidth = $(window).width();
+		var windowHeight = $(window).height();
+
+		function widthOrFallback(n) {
+			if (windowWidth < (n + 1.5) * width && n > 1) {
+				return widthOrFallback(n - 1);
+			} else {
+				$(self).parent().find(".extended-menu").css("width", (width * n + 14) + "px");
+				try {
+					var location = $(self).parent().find(".extended-menu").offset();
+					$(self).parent().find(".extended-menu").css("max-height", (windowHeight - (location.top + 10)) + "px");
+				} catch (e) {
+					console.error(e);
+				}
+
+			}
+		}
+
+		if (items >= 42) {
+			widthOrFallback(12)
+		} else if (items >= 30) {
+			widthOrFallback(6)
+		} else if (items >= 12) {
+			widthOrFallback(4);
+		} else if (items >= 6) {
+			widthOrFallback(3);
+		} else {
+			widthOrFallback(1);
+		}
+	}
+</script>
+
+<li class="dropdown-heading">Primary Compass</li>
+<li><a href="/Compass/Index/24">Primary Compass <span class="glyphicon glyphicon-home selected"></span></a></li>
+
+<li class="divider"></li>
+<li class="dropdown-heading">Meeting Compasses</li>
+@foreach (var meeting in orderedMeetings.Take(maxLen))
+{
+    var primary = isPrimary(meeting.Id,CompassType.L10);
+    <li class="compass-dropdown-meeting-@(meeting.Id)">
+        <a href="javascript:void(0)" onclick="Workspace.goToMeetingWorkspace(@meeting.Id)">
+            @(string.IsNullOrWhiteSpace(meeting.Name) ? "-unnamed meeting-" : meeting.Name) &nbsp;
+            <span class="glyphicon glyphicon-star @(meeting.StarDate!=null?"starred":"")"></span>
+            <span class="glyphicon glyphicon-home @(primary?"selected":"")"></span>
+        </a>
+    </li>
+}
+@if (breakoutMeetings)
+{
+    <li class="dropdown-submenu">
+        <a tabindex="-1" onmouseover="recalculateCompassDropdownExtendedMenuStyle(this,@(orderedMeetings.Skip(maxLen).Count()))">More Meetings<span class="extra-padding-1"></span><span class="extra-padding-2"></span><span class="extra-padding-3"></span></a>
+        <ul class="dropdown-menu extended-menu" style="">
+            @foreach (var meeting in orderedMeetings.Skip(maxLen))
+            {
+                var primary = isPrimary(meeting.Id, CompassType.L10);
+                <li class="compass-dropdown-meeting-@(meeting.Id)">
+                    <span class="glyphicon glyphicon-star @(meeting.StarDate!=null?"starred":"")"></span>
+                    <span class="glyphicon glyphicon-home @(primary?"selected":"")"></span>
+                    <a href="javascript:void(0)" onclick="compass.goToMeetingWorkspace(@meeting.Id)">
+                        @(string.IsNullOrWhiteSpace(meeting.Name) ? "-unnamed meeting-" : meeting.Name) &nbsp;
+                    </a>
+                </li>
+            }
+        </ul>
+    </li>
+}
+@if (orderedMeetings.Count() == 0)
+{
+    <li>
+        <a class="gray noclick"><small><i>No meeting compass</i></small></a>
+    </li>
+}
+<li class="divider"></li>
+<li class="dropdown-heading">Custom Compasses</li>
+
+@foreach (var c in custom.Take(maxLen))
+{
+    var primary = isPrimary(c.Id, CompassType.Standard);
+    <li>
+        <a class="dashboard_txt_@(c.Id)" href="/Compass/Index/@(c.Id)">@(string.IsNullOrWhiteSpace(c.Name) ? "-unnamed-" : c.Name) &nbsp;<span class="glyphicon glyphicon-home @(primary?"selected":"")"></span></a>
+    </li>
+}
+@if (breakoutCustom)
+{
+    <li class="dropdown-submenu">
+        <a tabindex="-1" onmouseover="recalculateCompassDropdownExtendedMenuStyle(this,@(custom.Skip(maxLen).Count()))">More Custom Compasses<span class="extra-padding-1"></span><span class="extra-padding-2"></span><span class="extra-padding-3"></span></a>
+        <ul class="dropdown-menu extended-menu" style="">
+            @foreach (var c in custom.Skip(maxLen))
+            {
+                var primary = isPrimary(c.Id, CompassType.Standard);
+                <li>
+                    <span class="glyphicon glyphicon-home @(primary?"selected":"")"></span>
+                    <a class="dashboard_txt_@(c.Id)" href="/Dashboard/Index/@(c.Id)">@(string.IsNullOrWhiteSpace(c.Name)?"-unnamed-":c.Name) &nbsp;</a>
+                </li>
+            }
+        </ul>
+    </li>
+}
+@if (custom.Count() == 0 && !Model.DisplayCreate)
+{
+    <li>
+        <a class="gray noclick"><small><i>No custom compasss</i></small></a>
+    </li>
+}
+@if (Model.DisplayCreate)
+{
+    <li>
+        <a href="#" onclick="Compass.addPage()">New Compass <span class="glyphicon glyphicon-plus-sign add-compass"></span></a>
+    </li>
+}
